@@ -1,0 +1,193 @@
+syntax = "proto3";
+
+package aegis.schema.v1;
+
+option go_package = "github.com/aegis-framework/aegis/pkg/schema";
+
+import "google/protobuf/struct.proto";
+
+// ── Envelope ──────────────────────────────────────────────────────────────────
+
+message EventEnvelope {
+  string tenant_id  = 1;
+  string user_id    = 2;
+  string session_id = 3;
+  uint64 seq        = 4;   // monotonic per session
+  int64  ts_unix_ms = 5;
+  EventType event_type = 6;
+  oneof payload {
+    ModelCallStarted     model_call_started     = 10;
+    ModelCallFinished    model_call_finished    = 11;
+    ToolCallProposed     tool_call_proposed     = 12;
+    ToolCallAllowed      tool_call_allowed      = 13;
+    ToolCallDenied       tool_call_denied       = 14;
+    ToolCallExecuted     tool_call_executed     = 15;
+    ToolResult           tool_result            = 16;
+    PolicyDecision       policy_decision        = 17;
+    ApprovalRequested    approval_requested     = 18;
+    ApprovalDecided      approval_decided       = 19;
+    MemoryRead           memory_read            = 20;
+    MemoryWrite          memory_write           = 21;
+    HandoffRequested     handoff_requested      = 22;
+    HandoffCompleted     handoff_completed      = 23;
+    CheckpointCreated    checkpoint_created     = 24;
+    Termination          termination            = 25;
+    ErrorRaised          error_raised           = 26;
+  }
+  bytes  prev_hash = 7;  // SHA-256 of previous event canonical JSON
+  bytes  hash      = 8;  // SHA-256 of this event canonical JSON (excluding hash field)
+}
+
+// ── Event type enum ───────────────────────────────────────────────────────────
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED    = 0;
+  MODEL_CALL_STARTED        = 1;
+  MODEL_CALL_FINISHED       = 2;
+  TOOL_CALL_PROPOSED        = 3;
+  TOOL_CALL_ALLOWED         = 4;
+  TOOL_CALL_DENIED          = 5;
+  TOOL_CALL_EXECUTED        = 6;
+  TOOL_RESULT               = 7;
+  POLICY_DECISION           = 8;
+  APPROVAL_REQUESTED        = 9;
+  APPROVAL_DECIDED          = 10;
+  MEMORY_READ               = 11;
+  MEMORY_WRITE              = 12;
+  HANDOFF_REQUESTED         = 13;
+  HANDOFF_COMPLETED         = 14;
+  CHECKPOINT_CREATED        = 15;
+  TERMINATION               = 16;
+  ERROR_RAISED              = 17;
+}
+
+// ── Payload types ─────────────────────────────────────────────────────────────
+
+message ModelCallStarted {
+  string model_id     = 1;
+  string provider     = 2;
+  uint32 prompt_tokens = 3;
+  string call_id      = 4;
+}
+
+message ModelCallFinished {
+  string call_id         = 1;
+  uint32 completion_tokens = 2;
+  uint32 total_tokens    = 3;
+  string finish_reason   = 4;
+  int64  latency_ms      = 5;
+}
+
+message ToolCallProposed {
+  string tool_name  = 1;
+  string tool_id    = 2;
+  google.protobuf.Struct args = 3;
+  string call_id    = 4;
+}
+
+message ToolCallAllowed {
+  string call_id    = 1;
+  string policy_ref = 2;
+}
+
+message ToolCallDenied {
+  string call_id    = 1;
+  string reason_code = 2;
+  string policy_ref  = 3;
+}
+
+message ToolCallExecuted {
+  string call_id      = 1;
+  int64  started_ms   = 2;
+}
+
+message ToolResult {
+  string call_id       = 1;
+  bool   is_error      = 2;
+  google.protobuf.Struct content = 3;
+  int64  latency_ms    = 4;
+}
+
+message PolicyDecision {
+  string       call_id  = 1;
+  PolicyOutcome outcome = 2;
+  repeated string reason_codes = 3;
+  google.protobuf.Struct constraints = 4;
+}
+
+enum PolicyOutcome {
+  POLICY_OUTCOME_UNSPECIFIED = 0;
+  ALLOW                      = 1;
+  DENY                       = 2;
+  REQUIRE_APPROVAL           = 3;
+}
+
+message ApprovalRequested {
+  string call_id         = 1;
+  string approval_token  = 2;
+  string channel         = 3;  // "cli" | "webhook"
+  int64  expires_unix_ms = 4;
+}
+
+message ApprovalDecided {
+  string approval_token = 1;
+  bool   approved       = 2;
+  string decided_by     = 3;
+  google.protobuf.Struct edited_args = 4;
+}
+
+message MemoryRead {
+  string memory_key    = 1;
+  string memory_store  = 2;
+  uint32 bytes_read    = 3;
+}
+
+message MemoryWrite {
+  string memory_key    = 1;
+  string memory_store  = 2;
+  uint32 bytes_written = 3;
+}
+
+message HandoffRequested {
+  string from_agent = 1;
+  string to_agent   = 2;
+  string context_id = 3;
+}
+
+message HandoffCompleted {
+  string from_agent = 1;
+  string to_agent   = 2;
+  string context_id = 3;
+  bool   success    = 4;
+}
+
+message CheckpointCreated {
+  string checkpoint_id   = 1;
+  string snapshot_hash   = 2;
+  uint64 snapshot_seq    = 3;
+}
+
+message Termination {
+  TerminationReason reason_code = 1;
+  string            detail      = 2;
+  repeated uint64   cycle_seqs  = 3;  // event seq numbers in cycle trace (for loop detection)
+}
+
+enum TerminationReason {
+  TERMINATION_REASON_UNSPECIFIED = 0;
+  COMPLETED                      = 1;
+  MAX_STEPS_EXCEEDED             = 2;
+  MAX_TOOL_CALLS_EXCEEDED        = 3;
+  MAX_WALL_TIME_EXCEEDED         = 4;
+  LOOP_DETECTED                  = 5;
+  POLICY_HARD_DENY               = 6;
+  ERROR                          = 7;
+  HUMAN_INTERRUPTED              = 8;
+  BUDGET_EXHAUSTED               = 9;
+}
+
+message ErrorRaised {
+  string code    = 1;
+  string message = 2;
+  bool   fatal   = 3;
+}

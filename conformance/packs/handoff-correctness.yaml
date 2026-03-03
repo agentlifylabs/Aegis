@@ -1,0 +1,108 @@
+name: handoff-correctness
+description: Verifies handoff event handling and policy correctness at session boundaries.
+version: "0.1"
+tests:
+  - id: HC-001
+    pack: handoff-correctness
+    req_id: HND-001
+    description: Tool call proposed before handoff in normal budget is allowed
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t1
+          args: {path: "/workspace/brief.md"}
+      snapshot:
+        steps_consumed: 5
+        tool_calls_consumed: 3
+        wall_time_ms: 2000
+        is_tainted: false
+        loop_violation: ""
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: handoff-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: allow
+
+  - id: HC-002
+    pack: handoff-correctness
+    req_id: HND-002
+    description: Tool call at budget limit after handoff accumulation is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t2
+          args: {path: "/workspace/brief.md"}
+      snapshot:
+        steps_consumed: 24
+        tool_calls_consumed: 12
+        wall_time_ms: 119000
+        is_tainted: false
+        loop_violation: ""
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: handoff-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: BUDGET_EXCEEDED
+
+  - id: HC-003
+    pack: handoff-correctness
+    req_id: HND-003
+    description: Tainted handoff context cannot execute high-risk tool
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: exec
+          call_id: t3
+          args: {cmd: "cat /etc/passwd"}
+      snapshot:
+        steps_consumed: 2
+        tool_calls_consumed: 1
+        wall_time_ms: 300
+        is_tainted: true
+        sanitized_keys: []
+        loop_violation: ""
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: handoff-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["exec"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: true
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: TAINTED_TO_HIGH_RISK

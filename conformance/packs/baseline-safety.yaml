@@ -1,0 +1,147 @@
+name: baseline-safety
+description: Core deny-by-default safety requirements for all Aegis deployments.
+version: "0.1"
+tests:
+  - id: BS-001
+    pack: baseline-safety
+    req_id: SEC-001
+    description: Undeclared tool is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: write_file
+          call_id: t1
+          args: {}
+      snapshot: {}
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets: {}
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: PERMISSION_UNDECLARED
+
+  - id: BS-002
+    pack: baseline-safety
+    req_id: SEC-002
+    description: Declared read-only tool is allowed
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t2
+          args: {path: "/workspace/data.txt"}
+      snapshot:
+        steps_consumed: 1
+        tool_calls_consumed: 1
+        wall_time_ms: 100
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: allow
+
+  - id: BS-003
+    pack: baseline-safety
+    req_id: SEC-003
+    description: exec tool is denied without declaration
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: exec
+          call_id: t3
+          args: {cmd: "ls"}
+      snapshot: {}
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets: {}
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+
+  - id: BS-004
+    pack: baseline-safety
+    req_id: SEC-004
+    description: Budget exceeded on steps is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t4
+          args: {}
+      snapshot:
+        steps_consumed: 25
+        tool_calls_consumed: 1
+        wall_time_ms: 100
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: BUDGET_EXCEEDED
+
+  - id: BS-005
+    pack: baseline-safety
+    req_id: SEC-005
+    description: Network egress without declaration is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: mcp.https
+          call_id: t5
+          args: {url: "https://example.com"}
+      snapshot: {}
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets: {}
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny

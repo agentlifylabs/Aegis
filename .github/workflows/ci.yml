@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "epic/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  go-test:
+    name: Go unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Install CGO deps (sqlite3)
+        run: sudo apt-get install -y gcc libsqlite3-dev
+
+      - name: go mod tidy check
+        run: |
+          go mod tidy
+          git diff --exit-code go.sum
+
+      - name: Run unit tests (no network)
+        run: go test -race ./pkg/... ./internal/... -timeout 120s
+
+      - name: Run golden-file tests
+        run: go test -race ./pkg/canon/... ./pkg/eventlog/... -run TestGolden -v
+
+      - name: Policy acceptance tests (Epic 03)
+        run: go test -race ./pkg/policy/... -v -timeout 60s
+
+      - name: Manifest tests (Epic 04)
+        run: go test -race ./pkg/manifest/... -v -timeout 60s
+
+      - name: Proxy tests (Epic 05)
+        run: go test -race ./pkg/proxy/... -v -timeout 60s
+
+      - name: Loop/budget guard tests (Epic 06)
+        run: go test -race ./pkg/loop/... -v -timeout 60s
+
+      - name: Approval router tests (Epic 07)
+        run: go test -race ./pkg/approval/... -v -timeout 60s
+
+      - name: Taint tracking tests (Epic 08)
+        run: go test -race ./pkg/taint/... -v -timeout 60s
+
+      - name: Replay harness tests (Epic 09)
+        run: go test -race ./pkg/replay/... -v -timeout 60s
+
+      - name: Telemetry tests (Epic 10)
+        run: go test -race ./pkg/telemetry/... -v -timeout 60s
+
+      - name: OpenClaw adapter tests (Epic 11)
+        run: go test -race ./pkg/openclaw/... -v -timeout 60s
+
+      - name: Conformance suite tests (Epic 12)
+        run: go test -race ./conformance/... -v -timeout 60s
+
+      - name: Integration tests (end-to-end guardrails)
+        run: go test -race ./integration/... -v -timeout 120s
+
+      - name: Config loader tests (Epic 13)
+        run: go test -race ./internal/config/... -v -timeout 60s
+
+  go-lint:
+    name: Go lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+  python-test:
+    name: Python SDK tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e "python/[dev]"
+
+      - name: Run tests
+        run: |
+          cd python
+          python -m pytest -x -q --timeout=60
+
+      - name: Lint
+        run: |
+          cd python
+          ruff check aegis_sdk/
+
+  cross-platform-hash:
+    name: Cross-platform hash parity (Go ↔ Python)
+    runs-on: ubuntu-latest
+    needs: [go-test, python-test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Install CGO deps
+        run: sudo apt-get install -y gcc libsqlite3-dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python SDK
+        run: pip install -e "python/[dev]"
+
+      - name: Compute Go golden hash
+        run: |
+          go test ./pkg/canon/... -run TestGoldenHash -v 2>&1 | grep "hash:" | tee /tmp/go_hash.txt
+
+      - name: Compute Python golden hash
+        run: |
+          python - <<'EOF' | tee /tmp/py_hash.txt
+          import hashlib
+          import sys
+          sys.path.insert(0, "python")
+          from aegis_sdk.canon import canonicalize
+          obj = {
+              "event_type": "TOOL_CALL_PROPOSED",
+              "seq": 1,
+              "session_id": "session-abc",
+              "tenant_id": "tenant-xyz",
+              "ts_unix_ms": 1700000000000,
+          }
+          h = hashlib.sha256(canonicalize(obj)).hexdigest()
+          print(f"hash: {h}")
+          EOF
+
+      - name: Assert hashes match
+        run: |
+          GO_HASH=$(grep -o '[0-9a-f]\{64\}' /tmp/go_hash.txt | head -1)
+          PY_HASH=$(grep -o '[0-9a-f]\{64\}' /tmp/py_hash.txt | head -1)
+          echo "Go hash:     $GO_HASH"
+          echo "Python hash: $PY_HASH"
+          if [ "$GO_HASH" != "$PY_HASH" ]; then
+            echo "ERROR: hash mismatch between Go and Python!"
+            exit 1
+          fi
+          echo "OK: hashes match"

@@ -1,0 +1,46 @@
+# ── Compiled binaries ─────────────────────────────────────────────────────────
+bin/
+/aegisd
+/aegisctl
+
+# ── Database & runtime data ────────────────────────────────────────────────────
+*.db
+*.db-wal
+*.db-shm
+*.ndjson
+
+# ── Go ─────────────────────────────────────────────────────────────────────────
+/vendor/
+*.pb.go
+*.pb.gw.go
+
+# ── Python ─────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+dist/
+.ruff_cache/
+.mypy_cache/
+*.egg
+build/
+
+# ── Secrets (never commit) ─────────────────────────────────────────────────────
+deploy/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+aegisd.env
+
+# ── Editor & OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Dev planning artifacts (not for public consumption) ───────────────────────
+/dev/

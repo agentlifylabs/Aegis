@@ -1,0 +1,107 @@
+name: replay-determinism
+description: Verifies that policy decisions are deterministic across replay runs.
+version: "0.1"
+tests:
+  - id: RD-001
+    pack: replay-determinism
+    req_id: REP-001
+    description: Same event+snapshot always produces same policy outcome (allow)
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t1
+          args: {path: "/workspace/file.txt"}
+      snapshot:
+        steps_consumed: 3
+        tool_calls_consumed: 2
+        wall_time_ms: 500
+        is_tainted: false
+        loop_violation: ""
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: allow
+
+  - id: RD-002
+    pack: replay-determinism
+    req_id: REP-002
+    description: Same event+snapshot always produces same policy outcome (deny)
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: exec
+          call_id: t2
+          args: {cmd: "whoami"}
+      snapshot:
+        steps_consumed: 3
+        tool_calls_consumed: 2
+        wall_time_ms: 500
+        is_tainted: false
+        loop_violation: ""
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: PERMISSION_UNDECLARED
+
+  - id: RD-003
+    pack: replay-determinism
+    req_id: REP-003
+    description: Loop violation in snapshot causes deny
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t3
+          args: {path: "/workspace/file.txt"}
+      snapshot:
+        steps_consumed: 5
+        tool_calls_consumed: 3
+        wall_time_ms: 1000
+        loop_violation: LOOP_DETECTED
+        is_tainted: false
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: LOOP_DETECTED

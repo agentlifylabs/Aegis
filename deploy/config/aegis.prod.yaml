@@ -1,0 +1,26 @@
+# aegis.yaml — production configuration template.
+# Replace all <PLACEHOLDER> values before deploying.
+# See docs/hardening.md for the full hardening checklist.
+
+# Postgres DSN — password injected via Docker secret mounted at runtime.
+# Use an environment variable or secret manager; never commit credentials.
+dsn: "postgres://aegis:<PASSWORD>@postgres:5432/aegis?sslmode=require"
+
+addr: ":8080"
+manifest: "/etc/aegis/aegis-manifest.json"
+trust_mode: "prod"
+
+rate_limit: 120   # tool calls per minute per tenant+tool
+
+telemetry:
+  disabled: false
+  path: "/var/lib/aegis/traces.ndjson"
+
+# TLS is terminated at the reverse proxy (see docs/hardening.md).
+# Set tls.enabled=true only when running aegisd with direct TLS (no proxy).
+tls:
+  enabled: false
+
+log:
+  level: "info"
+  format: "json"

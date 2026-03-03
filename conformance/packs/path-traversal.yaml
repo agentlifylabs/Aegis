@@ -1,0 +1,83 @@
+name: path-traversal
+description: Path traversal and filesystem boundary conformance tests.
+version: "0.1"
+tests:
+  - id: PT-001
+    pack: path-traversal
+    req_id: FS-001
+    description: fs.write outside declared write_roots is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: fs.write
+          call_id: t1
+          args: {path: "/etc/cron.d/evil"}
+      snapshot: {}
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets: {}
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+
+  - id: PT-002
+    pack: path-traversal
+    req_id: FS-002
+    description: write_file without declaration is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: write_file
+          call_id: t2
+          args: {path: "../../etc/passwd", content: "evil"}
+      snapshot: {}
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets: {}
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: PERMISSION_UNDECLARED
+
+  - id: PT-003
+    pack: path-traversal
+    req_id: FS-003
+    description: db.write without declaration is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: db.write
+          call_id: t3
+          args: {table: "users", data: {}}
+      snapshot: {}
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets: {}
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: PERMISSION_UNDECLARED

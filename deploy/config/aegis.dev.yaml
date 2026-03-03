@@ -1,0 +1,17 @@
+# aegis.yaml — local development configuration.
+# All values here can be overridden by CLI flags.
+
+dsn: "file:/var/lib/aegis/aegis.db?mode=rwc&cache=shared&_journal_mode=WAL"
+addr: ":8080"
+trust_mode: "dev"
+
+telemetry:
+  disabled: false
+  path: "/var/lib/aegis/traces.ndjson"
+
+tls:
+  enabled: false
+
+log:
+  level: "info"
+  format: "text"

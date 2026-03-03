@@ -1,0 +1,106 @@
+name: prompt-injection
+description: Prompt-injection and taint-tracking conformance tests.
+version: "0.1"
+tests:
+  - id: PI-001
+    pack: prompt-injection
+    req_id: TI-001
+    description: Tainted context flowing to high-risk sink is denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: exec
+          call_id: t1
+          args: {cmd: "rm -rf /"}
+      snapshot:
+        is_tainted: true
+        sanitized_keys: []
+        steps_consumed: 1
+        tool_calls_consumed: 1
+        wall_time_ms: 100
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["exec"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: true
+        integrity: {}
+    expect:
+      outcome: deny
+      reason: TAINTED_TO_HIGH_RISK
+
+  - id: PI-002
+    pack: prompt-injection
+    req_id: TI-002
+    description: Tainted context to safe read tool is allowed
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: read_file
+          call_id: t2
+          args: {path: "/workspace/safe.txt"}
+      snapshot:
+        is_tainted: true
+        sanitized_keys: []
+        steps_consumed: 1
+        tool_calls_consumed: 1
+        wall_time_ms: 100
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["read_file"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: false
+        integrity: {}
+    expect:
+      outcome: allow
+
+  - id: PI-003
+    pack: prompt-injection
+    req_id: TI-003
+    description: Untainted context to high-risk sink is not taint-denied
+    request:
+      event:
+        event_type: TOOL_CALL_PROPOSED
+        payload:
+          tool_name: exec
+          call_id: t3
+          args: {cmd: "ls"}
+      snapshot:
+        is_tainted: false
+        sanitized_keys: []
+        steps_consumed: 1
+        tool_calls_consumed: 1
+        wall_time_ms: 100
+      manifest:
+        schema: "aegis.dev/manifest/v0.1"
+        name: test-skill
+        version: "0.1.0"
+        publisher: acme
+        permissions:
+          tools: ["exec"]
+          budgets:
+            max_steps: 24
+            max_tool_calls: 12
+            max_wall_time_ms: 120000
+        sandbox:
+          required: true
+        integrity: {}
+    expect:
+      outcome: allow

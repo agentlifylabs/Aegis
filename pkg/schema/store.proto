@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package aegis.schema.v1;
+
+option go_package = "github.com/aegis-framework/aegis/pkg/schema";
+
+import "google/protobuf/struct.proto";
+
+// ── Stored event row (DB projection of EventEnvelope) ────────────────────────
+
+message StoredEvent {
+  string tenant_id    = 1;
+  string session_id   = 2;
+  uint64 seq          = 3;
+  int64  ts_unix_ms   = 4;
+  string event_type   = 5;  // string name of EventType enum
+  bytes  payload_json = 6;  // canonical JSON of payload
+  bytes  hash         = 7;
+  bytes  prev_hash    = 8;
+}
+
+// ── Session snapshot ──────────────────────────────────────────────────────────
+
+message Snapshot {
+  string tenant_id     = 1;
+  string session_id    = 2;
+  uint64 last_seq      = 3;
+  int64  ts_unix_ms    = 4;
+  SnapshotState state  = 5;
+  bytes  snapshot_hash = 6;  // SHA-256 of canonical JSON of SnapshotState
+}
+
+message SnapshotState {
+  BudgetState   budgets        = 1;
+  repeated ActiveToolPermission active_tool_permissions = 2;
+  LastOutcomes  last_outcomes  = 3;
+  repeated string taint_labels = 4;
+  HandoffState  handoff        = 5;
+}
+
+message BudgetState {
+  uint32 steps_consumed      = 1;
+  uint32 model_calls_consumed = 2;
+  uint32 tool_calls_consumed = 3;
+  int64  wall_time_ms        = 4;
+  int64  session_start_ms    = 5;
+}
+
+message ActiveToolPermission {
+  string tool_name  = 1;
+  string granted_by = 2;  // policy_ref
+  int64  expires_ms = 3;  // 0 = session-scoped
+}
+
+message LastOutcomes {
+  string last_model_call_id  = 1;
+  string last_tool_call_id   = 2;
+  string last_tool_name      = 3;
+  bool   last_tool_was_error = 4;
+  string last_policy_outcome = 5;
+}
+
+message HandoffState {
+  bool   in_handoff   = 1;
+  string from_agent   = 2;
+  string to_agent     = 3;
+  string context_id   = 4;
+}
+
+// ── Query request/response ────────────────────────────────────────────────────
+
+message QueryEventsRequest {
+  string tenant_id   = 1;
+  string session_id  = 2;  // optional filter
+  int64  from_ts_ms  = 3;  // optional range filter
+  int64  to_ts_ms    = 4;
+  string event_type  = 5;  // optional filter
+  string tool_name   = 6;  // optional filter (matches ToolCallProposed payloads)
+  string policy_outcome = 7; // optional: "ALLOW" | "DENY" | "REQUIRE_APPROVAL"
+  uint32 limit       = 8;
+  string page_token  = 9;
+}
+
+message QueryEventsResponse {
+  repeated StoredEvent events     = 1;
+  string               next_token = 2;
+}
+
+message GetSnapshotRequest {
+  string tenant_id  = 1;
+  string session_id = 2;
+}
+
+message GetSnapshotResponse {
+  Snapshot snapshot = 1;
+}
+
+message VerifyChainRequest {
+  string tenant_id  = 1;
+  string session_id = 2;
+}
+
+message VerifyChainResponse {
+  bool   valid           = 1;
+  uint64 first_bad_seq   = 2;  // 0 if valid
+  string error           = 3;
+}

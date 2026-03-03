@@ -1,0 +1,49 @@
+# systemd unit file for aegisd.
+# Install:
+#   sudo cp deploy/aegisd.service /etc/systemd/system/aegisd.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now aegisd
+#
+# Logs: journalctl -u aegisd -f
+
+[Unit]
+Description=Aegis agent control plane daemon
+Documentation=https://github.com/aegis-framework/aegis
+After=network-online.target
+Wants=network-online.target
+# If using Postgres, add: After=postgresql.service
+
+[Service]
+Type=simple
+User=aegis
+Group=aegis
+
+# Config and data directories.
+WorkingDirectory=/var/lib/aegis
+ExecStart=/usr/local/bin/aegisd --config /etc/aegis/aegis.yaml
+
+# Restart on failure with back-off.
+Restart=on-failure
+RestartSec=5s
+
+# Graceful shutdown timeout.
+TimeoutStopSec=30s
+
+# Security hardening.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/aegis
+CapabilityBoundingSet=
+
+# Environment.
+Environment=GOMAXPROCS=2
+EnvironmentFile=-/etc/aegis/aegisd.env
+
+# Limit resource usage.
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target
