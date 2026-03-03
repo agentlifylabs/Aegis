@@ -167,7 +167,7 @@ func newManifestValidateCmd() *cobra.Command {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "SIGNATURE INVALID: %v\n", err)
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "OK: manifest %q v%s by %s\n", m.Name, m.Version, m.Publisher)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "OK: manifest %q v%s by %s\n", m.Name, m.Version, m.Publisher)
 			return nil
 		},
 	}
@@ -201,7 +201,7 @@ func newManifestInstallCmd() *cobra.Command {
 			if err := manifest.VerifySignature(m, nil, manifest.TrustMode(trustMode)); err != nil {
 				return fmt.Errorf("signature: %w", err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "installed: %s v%s\n", m.Name, m.Version)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "installed: %s v%s\n", m.Name, m.Version)
 			return nil
 		},
 	}

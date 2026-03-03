@@ -98,7 +98,7 @@ func run(cmd *cobra.Command, _ []string) error {
 	}
 	defer srv.Close()
 
-	fmt.Fprintf(os.Stdout, "aegisd listening on %s\n", resolvedAddr)
+	_, _ = fmt.Fprintf(os.Stdout, "aegisd listening on %s\n", resolvedAddr)
 	return srv.Run(ctx)
 }
 

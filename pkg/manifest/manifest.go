@@ -217,7 +217,7 @@ func ComputeTree(dir string) (files map[string]string, treeHash string, err erro
 			return herr
 		}
 		files[rel] = h
-		fmt.Fprintf(agg, "%s:%s\n", rel, h)
+		_, _ = fmt.Fprintf(agg, "%s:%s\n", rel, h)
 		return nil
 	})
 	if err != nil {

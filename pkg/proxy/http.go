@@ -109,7 +109,7 @@ func (s *HTTPServer) handleSSE(w http.ResponseWriter, r *http.Request) {
 		scheme = "https"
 	}
 	endpoint := fmt.Sprintf("%s://%s/mcp", scheme, r.Host)
-	fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", endpoint)
+	_, _ = fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", endpoint)
 	flusher.Flush()
 
 	ticker := time.NewTicker(15 * time.Second)
@@ -120,7 +120,7 @@ func (s *HTTPServer) handleSSE(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			return
 		case t := <-ticker.C:
-			fmt.Fprintf(w, ": keepalive %d\n\n", t.Unix())
+			_, _ = fmt.Fprintf(w, ": keepalive %d\n\n", t.Unix())
 			flusher.Flush()
 		}
 	}
