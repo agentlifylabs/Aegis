@@ -130,7 +130,7 @@ func runExport(cmd *cobra.Command, tenantID, sessionID, serverURL, outFile strin
 		return fmt.Errorf("export: decode: %w", err)
 	}
 	for _, ev := range page.Events {
-		fmt.Fprintf(out, "%s\n", ev)
+		_, _ = fmt.Fprintf(out, "%s\n", ev)
 	}
 	return nil
 }
@@ -160,11 +160,11 @@ func newManifestValidateCmd() *cobra.Command {
 				return err
 			}
 			if err := manifest.Validate(m); err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "INVALID: %v\n", err)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "INVALID: %v\n", err)
 				return err
 			}
 			if err := manifest.VerifySignature(m, nil, manifest.TrustMode(trustMode)); err != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "SIGNATURE INVALID: %v\n", err)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "SIGNATURE INVALID: %v\n", err)
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "OK: manifest %q v%s by %s\n", m.Name, m.Version, m.Publisher)

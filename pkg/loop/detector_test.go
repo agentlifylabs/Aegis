@@ -146,7 +146,7 @@ func TestAcceptance_LoopingReproTerminatesEarly(t *testing.T) {
 func TestAcceptance_StopReasonsIncludeCycleTrace(t *testing.T) {
 	d := New(budget(100, 100))
 	args := map[string]any{"x": 1}
-	d.RecordToolCall(10, "deploy", args, "h1", 0)
+	_ = d.RecordToolCall(10, "deploy", args, "h1", 0)
 	v := d.RecordToolCall(20, "deploy", args, "h2", 0)
 	require.NotNil(t, v)
 	assert.NotEmpty(t, v.CycleTrace, "cycle trace must be populated")

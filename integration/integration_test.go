@@ -452,9 +452,11 @@ func TestIntegration_ListEvents_ReturnsIngested(t *testing.T) {
 	ingestEvent(t, hs, sessionStartBody("t2", "list-sess-b", 0))
 
 	// List all events for tenant t2 (no session filter) — should return both.
-	resp, err := http.Get(hs.URL + "/v1/events?tenant_id=t2")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, hs.URL+"/v1/events?tenant_id=t2", nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	var page map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&page))
 	// EventPage has no json tags so Events encodes as "Events" (capital).
@@ -464,9 +466,11 @@ func TestIntegration_ListEvents_ReturnsIngested(t *testing.T) {
 
 func TestIntegration_ListEvents_EmptySession(t *testing.T) {
 	hs := newTestServer(t)
-	resp, err := http.Get(hs.URL + "/v1/events?tenant_id=ghost&session_id=nosuchsession")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, hs.URL+"/v1/events?tenant_id=ghost&session_id=nosuchsession", nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	var page map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&page))
