@@ -26,30 +26,6 @@ func newStore(t *testing.T) *sqlitestore.Store {
 
 func keys() KeyStore { return KeyStore{"tenant1": testKey} }
 
-// buildSession appends a minimal sequence of events:
-// ModelCallStarted → ToolCallProposed → ToolResult → Termination
-func buildSession(t *testing.T, st *sqlitestore.Store, tenantID, sessionID string) {
-	t.Helper()
-	ctx := context.Background()
-	b := eventlog.NewBuilder(tenantID, "user1", sessionID)
-
-	e0, err := b.Append(eventlog.EventTypeModelCallStarted, map[string]any{"call_id": "c1", "model_id": "gpt-4o"})
-	require.NoError(t, err)
-	require.NoError(t, st.AppendEvent(ctx, tenantID, e0))
-
-	e1, err := b.Append(eventlog.EventTypeToolCallProposed, map[string]any{"tool_name": "read_file", "call_id": "t1", "args": map[string]any{"path": "/tmp/x"}})
-	require.NoError(t, err)
-	require.NoError(t, st.AppendEvent(ctx, tenantID, e1))
-
-	e2, err := b.Append(eventlog.EventTypeToolResult, map[string]any{"call_id": "t1", "result": "file contents", "is_error": false})
-	require.NoError(t, err)
-	require.NoError(t, st.AppendEvent(ctx, tenantID, e2))
-
-	e3, err := b.Append(eventlog.EventTypeTermination, map[string]any{"reason": "COMPLETED"})
-	require.NoError(t, err)
-	require.NoError(t, st.AppendEvent(ctx, tenantID, e3))
-}
-
 // buildSessionViaRecorder does the same but uses the Recorder so outputs are captured.
 func buildSessionViaRecorder(t *testing.T, rec *Recorder, tenantID, sessionID string) {
 	t.Helper()

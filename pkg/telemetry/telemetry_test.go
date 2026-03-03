@@ -136,8 +136,8 @@ func TestTracer_StableTraceIDPerSession(t *testing.T) {
 
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	var s1, s2 Span
-	json.Unmarshal([]byte(lines[0]), &s1)
-	json.Unmarshal([]byte(lines[1]), &s2)
+	require.NoError(t, json.Unmarshal([]byte(lines[0]), &s1))
+	require.NoError(t, json.Unmarshal([]byte(lines[1]), &s2))
 	assert.Equal(t, s1.TraceID, s2.TraceID, "trace_id must be stable within a session")
 }
 

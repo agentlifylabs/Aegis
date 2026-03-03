@@ -102,7 +102,7 @@ func Load(path string) (*Manifest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("manifest: open %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	return decode(f)
 }
 
@@ -232,7 +232,7 @@ func hashFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err

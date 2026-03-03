@@ -56,23 +56,23 @@ func runVerify(cmd *cobra.Command, tenantID, sessionID, serverURL string) error 
 	if err != nil {
 		return fmt.Errorf("verify: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("verify: server returned %d: %s", resp.StatusCode, body)
 	}
 	var result map[string]any
 	if err := json.Unmarshal(body, &result); err != nil {
-		fmt.Fprintf(cmd.OutOrStdout(), "%s\n", body)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", body)
 		return nil
 	}
 	valid, _ := result["valid"].(bool)
 	if valid {
-		fmt.Fprintf(cmd.OutOrStdout(), "OK: chain valid for session %s\n", sessionID)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "OK: chain valid for session %s\n", sessionID)
 	} else {
 		errMsg, _ := result["error"].(string)
 		badSeq, _ := result["first_bad_seq"].(float64)
-		fmt.Fprintf(cmd.OutOrStdout(), "INVALID: first bad seq=%d error=%s\n", int(badSeq), errMsg)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "INVALID: first bad seq=%d error=%s\n", int(badSeq), errMsg)
 	}
 	return nil
 }
@@ -106,19 +106,19 @@ func runExport(cmd *cobra.Command, tenantID, sessionID, serverURL, outFile strin
 	if err != nil {
 		return fmt.Errorf("export: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("export: server returned %d: %s", resp.StatusCode, body)
 	}
 
-	var out io.Writer = cmd.OutOrStdout()
+	out := cmd.OutOrStdout()
 	if outFile != "-" && outFile != "" {
 		f, ferr := os.Create(outFile)
 		if ferr != nil {
 			return fmt.Errorf("export: create file: %w", ferr)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		out = f
 	}
 
@@ -196,7 +196,7 @@ func newManifestInstallCmd() *cobra.Command {
 				if err := manifest.VerifyTree(m, dir); err != nil {
 					return fmt.Errorf("tree integrity: %w", err)
 				}
-				fmt.Fprintln(cmd.OutOrStdout(), "tree integrity: OK")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "tree integrity: OK")
 			}
 			if err := manifest.VerifySignature(m, nil, manifest.TrustMode(trustMode)); err != nil {
 				return fmt.Errorf("signature: %w", err)

@@ -60,9 +60,9 @@ func referenceServer(t *testing.T) *httptest.Server {
 
 		// Budget check.
 		if snapshot != nil {
-			stepsRaw, _ := snapshot["steps_consumed"]
-			toolCallsRaw, _ := snapshot["tool_calls_consumed"]
-			wallRaw, _ := snapshot["wall_time_ms"]
+			stepsRaw := snapshot["steps_consumed"]
+			toolCallsRaw := snapshot["tool_calls_consumed"]
+			wallRaw := snapshot["wall_time_ms"]
 			steps := toInt(stepsRaw)
 			toolCalls := toInt(toolCallsRaw)
 			wall := toInt(wallRaw)

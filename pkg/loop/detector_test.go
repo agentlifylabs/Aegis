@@ -77,8 +77,8 @@ func TestLoop_IdenticalCall_DifferentArgs_NotDetected(t *testing.T) {
 func TestLoop_NoProgress_Detected(t *testing.T) {
 	d := New(budget(100, 100))
 	snapHash := "abc123"
-	d.RecordToolCall(0, "tool_a", nil, snapHash, 0)
-	d.RecordToolCall(1, "tool_b", nil, snapHash, 0)
+	_ = d.RecordToolCall(0, "tool_a", nil, snapHash, 0)
+	_ = d.RecordToolCall(1, "tool_b", nil, snapHash, 0)
 	v := d.RecordToolCall(2, "tool_c", nil, snapHash, 0)
 	require.NotNil(t, v)
 	assert.Equal(t, ReasonLoopNoProgress, v.Reason)
@@ -88,10 +88,10 @@ func TestLoop_NoProgress_Detected(t *testing.T) {
 
 func TestLoop_NoProgress_ResetOnChange(t *testing.T) {
 	d := New(budget(100, 100))
-	d.RecordToolCall(0, "a", nil, "hash1", 0)
-	d.RecordToolCall(1, "b", nil, "hash1", 0)
+	_ = d.RecordToolCall(0, "a", nil, "hash1", 0)
+	_ = d.RecordToolCall(1, "b", nil, "hash1", 0)
 	// Progress: hash changes.
-	d.RecordToolCall(2, "c", nil, "hash2", 0)
+	_ = d.RecordToolCall(2, "c", nil, "hash2", 0)
 	// Two more with same new hash — not yet 3.
 	assert.Nil(t, d.RecordToolCall(3, "d", nil, "hash2", 0))
 }

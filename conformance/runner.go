@@ -216,7 +216,7 @@ func (r *Runner) runOne(ctx context.Context, tc TestCase) TestResult {
 		res.Error = fmt.Sprintf("http: %v", err)
 		return res
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var decision struct {
 		Outcome string `json:"outcome"`

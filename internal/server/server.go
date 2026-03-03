@@ -14,7 +14,6 @@ import (
 	"github.com/aegis-framework/aegis/pkg/eventlog"
 	"github.com/aegis-framework/aegis/pkg/manifest"
 	"github.com/aegis-framework/aegis/pkg/policy"
-	"github.com/aegis-framework/aegis/pkg/proxy"
 	"github.com/aegis-framework/aegis/pkg/store"
 	"github.com/aegis-framework/aegis/pkg/store/reducer"
 	sqlitestore "github.com/aegis-framework/aegis/pkg/store/sqlite"
@@ -45,7 +44,6 @@ type Server struct {
 
 	policyEngine *policy.Engine
 	manifest     *manifest.Manifest // nil = dev permissive mode
-	mcpSrv       *proxy.HTTPServer
 	tracer       *telemetry.Tracer  // Epic 10
 }
 

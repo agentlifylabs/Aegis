@@ -86,9 +86,12 @@ func ingestEvent(t *testing.T, hs *httptest.Server, body map[string]any) map[str
 	t.Helper()
 	b, err := json.Marshal(body)
 	require.NoError(t, err)
-	resp, err := http.Post(hs.URL+"/v1/events", "application/json", bytes.NewReader(b))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, hs.URL+"/v1/events", bytes.NewReader(b))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	var out map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
 	return out
@@ -98,9 +101,12 @@ func ingestStatus(t *testing.T, hs *httptest.Server, body map[string]any) int {
 	t.Helper()
 	b, err := json.Marshal(body)
 	require.NoError(t, err)
-	resp, err := http.Post(hs.URL+"/v1/events", "application/json", bytes.NewReader(b))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, hs.URL+"/v1/events", bytes.NewReader(b))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	return resp.StatusCode
 }
 
@@ -108,9 +114,12 @@ func policyDecide(t *testing.T, hs *httptest.Server, event, snapshot, man map[st
 	t.Helper()
 	b, err := json.Marshal(map[string]any{"event": event, "snapshot": snapshot, "manifest": man})
 	require.NoError(t, err)
-	resp, err := http.Post(hs.URL+"/v1/policy/decide", "application/json", bytes.NewReader(b))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, hs.URL+"/v1/policy/decide", bytes.NewReader(b))
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	var out map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&out))
 	return out
@@ -184,17 +193,21 @@ func TestIntegration_HappyPath_MultipleEventsAccepted(t *testing.T) {
 
 func TestIntegration_Healthz(t *testing.T) {
 	hs := newTestServer(t)
-	resp, err := http.Get(hs.URL + "/healthz")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, hs.URL+"/healthz", nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestIntegration_Readyz(t *testing.T) {
 	hs := newTestServer(t)
-	resp, err := http.Get(hs.URL + "/readyz")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, hs.URL+"/readyz", nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
@@ -417,9 +430,11 @@ func TestIntegration_HashChain_VerifyValid(t *testing.T) {
 	ingestEvent(t, hs, sessionStartBody("tenant1", "chain1", 0))
 	ingestEvent(t, hs, toolCallBody("tenant1", "chain1", "read_file", "c1", 1))
 
-	resp, err := http.Get(fmt.Sprintf("%s/v1/sessions/chain1/verify?tenant_id=tenant1", hs.URL))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/v1/sessions/chain1/verify?tenant_id=tenant1", hs.URL), nil)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	var result map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
 	assert.Equal(t, http.StatusOK, resp.StatusCode)

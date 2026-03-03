@@ -154,7 +154,6 @@ func (s *Store) ListEvents(ctx context.Context, tenantID string, f store.EventFi
 	if f.PageToken != "" {
 		conds = append(conds, fmt.Sprintf("seq > $%d", argIdx))
 		args = append(args, f.PageToken)
-		argIdx++
 	}
 
 	limit := uint32(100)

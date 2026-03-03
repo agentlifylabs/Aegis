@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
 `
 
 func (s *Store) migrate() error {
-	_, err := s.db.Exec(schema)
+	_, err := s.db.ExecContext(context.Background(), schema)
 	if err != nil {
 		return fmt.Errorf("sqlite: migrate: %w", err)
 	}
@@ -168,7 +168,7 @@ func (s *Store) ListEvents(ctx context.Context, tenantID string, f store.EventFi
 	if err != nil {
 		return nil, fmt.Errorf("sqlite: list events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []*store.StoredEvent
 	for rows.Next() {
@@ -204,7 +204,7 @@ func (s *Store) VerifyChain(ctx context.Context, tenantID, sessionID string) (ui
 	if err != nil {
 		return 0, fmt.Errorf("sqlite: verify chain query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	type chainRow struct {
 		seq      uint64
@@ -277,9 +277,6 @@ func (s *Store) Close() error {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-type rowScanner interface {
-	Scan(dest ...any) error
-}
 
 func scanStoredEvent(row *sql.Row) (*store.StoredEvent, error) {
 	var e store.StoredEvent
