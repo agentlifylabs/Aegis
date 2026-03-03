@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 import urllib.request
 import urllib.error
 import json
 
-from aegis_sdk.envelope import Envelope, EventType, Builder
+from aegis_sdk.envelope import Envelope
 
 
 class AegisClient:

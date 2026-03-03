@@ -225,8 +225,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Built with the principle that agent safety is an infrastructure problem, not an afterthought.*
+_Built with the principle that agent safety is an infrastructure problem, not an afterthought._
